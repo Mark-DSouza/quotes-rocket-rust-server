@@ -4,6 +4,7 @@ extern crate rocket;
 mod seed_data;
 
 use crate::seed_data::seed_data;
+use rand::Rng;
 use rocket::serde::{json::Json, Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -16,11 +17,18 @@ pub struct Quote {
 
 #[get("/random")]
 fn get_random_quote() -> Json<Quote> {
+    let quotes = seed_data();
+
+    let random_number_in_quotes_range = rand::thread_rng().gen_range(0..quotes.len() as i32);
+    let random_id = random_number_in_quotes_range + 1;
+
+    let quote: &Quote = quotes.iter().find(|&x| x.id == random_id).unwrap();
+
     Json(Quote {
-        id: 1,
-        author: String::from("Henry van Dijk"),
-        content: String::from("Use what talents you have - the woods will be very silent if no birds sang there except those that sang best."),
-        category: String::from("Motivational"),
+        id: quote.id.clone(),
+        author: quote.author.clone(),
+        content: quote.content.clone(),
+        category: quote.category.clone(),
     })
 }
 
@@ -37,7 +45,7 @@ fn get_quote(id: i32) -> Json<Quote> {
 }
 
 #[get("/")]
-fn get_all_quotes() -> Json<[Quote; 12]> {
+fn get_all_quotes() -> Json<Vec<Quote>> {
     let quotes = seed_data();
     Json(quotes)
 }
