@@ -1,11 +1,15 @@
 #[macro_use]
 extern crate rocket;
 
-mod seed_data;
-
 use crate::seed_data::seed_data;
 use rand::Rng;
-use rocket::serde::{json::Json, Deserialize, Serialize};
+use rocket::{
+    fairing::AdHoc,
+    serde::{json::Json, Deserialize, Serialize},
+    State,
+};
+
+mod seed_data;
 
 #[derive(Serialize, Deserialize)]
 pub struct Quote {
@@ -60,10 +64,24 @@ fn index() -> &'static str {
     "Hello, world!"
 }
 
+#[derive(Deserialize)]
+struct Config {
+    name: String,
+    age: u8,
+}
+
+#[get("/config")]
+fn get_config(config: &State<Config>) -> String {
+    format!("Hello, {}! You are {} years old.", config.name, config.age)
+}
+
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![index]).mount(
-        "/quotes",
-        routes![get_random_quote, get_quote, get_all_quotes, create_quote],
-    )
+    rocket::build()
+        .attach(AdHoc::config::<Config>())
+        .mount("/", routes![index, get_config])
+        .mount(
+            "/quotes",
+            routes![get_random_quote, get_quote, get_all_quotes, create_quote],
+        )
 }
