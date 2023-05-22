@@ -50,6 +50,11 @@ fn get_all_quotes() -> Json<Vec<Quote>> {
     Json(quotes)
 }
 
+#[post("/", data = "<quote>")]
+fn create_quote(quote: Json<Quote>) -> Json<Quote> {
+    quote
+}
+
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
@@ -59,6 +64,6 @@ fn index() -> &'static str {
 fn rocket() -> _ {
     rocket::build().mount("/", routes![index]).mount(
         "/quotes",
-        routes![get_random_quote, get_quote, get_all_quotes],
+        routes![get_random_quote, get_quote, get_all_quotes, create_quote],
     )
 }
