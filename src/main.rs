@@ -9,9 +9,26 @@ use rocket::{
     State,
 };
 
+#[macro_use]
+extern crate diesel;
+use diesel::{table, Insertable, Queryable};
+
+extern crate rocket_sync_db_pools;
+use rocket_sync_db_pools::{database, postgres};
+
 mod seed_data;
 
-#[derive(Serialize, Deserialize)]
+table! {
+    quotes (id) {
+        id -> Int4,
+        author -> Varchar,
+        content -> Varchar,
+        category -> Varchar,
+    }
+}
+
+#[derive(Serialize, Deserialize, Queryable, Debug, Insertable)]
+#[table_name = "quotes"]
 pub struct Quote {
     id: i32,
     author: String,
@@ -75,9 +92,16 @@ fn get_config(config: &State<Config>) -> String {
     format!("Hello, {}! You are {} years old.", config.name, config.age)
 }
 
+// #[database("my_db")]
+// pub struct Db(postgres::Client);
+
+#[database("my_db")]
+struct MyDBConnection(postgres::Client);
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
+        .attach(MyDBConnection::fairing())
         .attach(AdHoc::config::<Config>())
         .mount("/", routes![index, get_config])
         .mount(
