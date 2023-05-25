@@ -66,10 +66,22 @@ fn get_quote(quote_id: i32) -> Json<Quote> {
     })
 }
 
+#[post("/", data = "<new_quote>")]
+pub fn create_quote(new_quote: Json<QuoteInput>) -> Json<QuoteInput> {
+    let connection = &mut database::establish_connection();
+
+    diesel::insert_into(quotes)
+        .values(&*new_quote)
+        .load::<Quote>(connection)
+        .expect("Error adding sighting");
+
+    new_quote
+}
+
 #[launch]
 fn rocket() -> Rocket<Build> {
     rocket::build().mount(
         "/api/v1/quotes",
-        routes![index, get_random_quote, get_quote],
+        routes![index, get_random_quote, get_quote, create_quote],
     )
 }
