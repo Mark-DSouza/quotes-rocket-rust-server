@@ -18,16 +18,19 @@ mod schema;
 fn get_random_quote() -> Json<Quote> {
     let connection = &mut database::establish_connection();
 
-    let all_quotes = quotes
-        .load::<Quote>(connection)
-        .map(Json)
-        .expect("Error loading birds");
+    let quote_ids = quotes
+        .select(id)
+        .load::<i32>(connection)
+        .expect("Error loading quote IDs");
 
-    let range = 0..all_quotes.len() as i32;
-    let random_number_in_range = rand::thread_rng().gen_range(range);
-    let random_id = random_number_in_range + 1;
+    let range = 0..quote_ids.len();
+    let random_index_in_range = rand::thread_rng().gen_range(range);
+    let random_id = quote_ids[random_index_in_range];
 
-    let quote: &Quote = all_quotes.iter().find(|&x| x.id == random_id).unwrap();
+    let quote = quotes
+        .find(random_id)
+        .first::<Quote>(connection)
+        .expect("Error finding quote with random ID");
 
     Json(Quote {
         id: quote.id.clone(),
@@ -46,7 +49,27 @@ fn index() -> Json<Vec<Quote>> {
         .expect("Error loading birds")
 }
 
+#[get("/<quote_id>")]
+fn get_quote(quote_id: i32) -> Json<Quote> {
+    let connection = &mut database::establish_connection();
+
+    let quote = quotes
+        .find(quote_id)
+        .first::<Quote>(connection)
+        .expect("Error finding quote with random ID");
+
+    Json(Quote {
+        id: quote_id.clone(),
+        author: quote.author.clone(),
+        content: quote.content.clone(),
+        category: quote.category.clone(),
+    })
+}
+
 #[launch]
 fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![index, get_random_quote])
+    rocket::build().mount(
+        "/api/v1/quotes",
+        routes![index, get_random_quote, get_quote],
+    )
 }
